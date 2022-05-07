@@ -1,10 +1,15 @@
 import math
+import numpy as np
 
 
-class Position:
+class Point:
     def __init__(self, x, y):
         self.x = x
         self.y = y
+
+    def to_ndarray(self):
+        arr = np.array([self.x, self.y])
+        return arr
 
 
 class Player:
@@ -23,6 +28,8 @@ class Player:
         self.speed = speed
         self.turn_speed = turn_speed
         self.radius = radius
+        # TODO: ADD LEVEL MAP
+        # self.level_map =
 
     def is_inside(self, level_map):
         h, w = level_map.map_arr.shape
@@ -33,10 +40,9 @@ class Player:
         return True
 
     def set_pos_to_bounds(self, level_map):
-        h, w = level_map.map_arr.shape
         # 1 mt is
-        horizontal_limit = w * level_map.tile_size - self.radius
-        vertical_limit = h * level_map.tile_size - self.radius
+        horizontal_limit = level_map.hrzn_size - self.radius
+        vertical_limit = level_map.vert_size - self.radius
         if self.pos.x < self.radius:
             self.pos.x = self.radius
         elif self.pos.x > horizontal_limit:
@@ -70,10 +76,14 @@ class Player:
         if self.rot < 0:
             self.rot += 2 * math.pi
 
+
 class LevelMap:
     def __init__(self, map_arr, tile_size):
         self.map_arr = map_arr
+        self.h, self.w = map_arr.shape
         self.tile_size = tile_size
+        self.hrzn_size = self.w * self.tile_size
+        self.vert_size = self.h * self.tile_size
 
 
 class Level:

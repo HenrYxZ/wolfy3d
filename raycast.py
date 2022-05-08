@@ -1,4 +1,7 @@
+import math
 import numpy as np
+
+import utils
 
 
 class Ray:
@@ -6,75 +9,66 @@ class Ray:
         self.pr = pr
         self.nr = nr
 
-    def get_distance(self, i, j, level_map):
-        # calculate four points with x in the two sides and y in the upper
-        # and bottom limit
-        x0 = i * level_map.tile_size
-        x1 = (i + 1) * level_map.tile_size
-        y2 = j * level_map.tile_size
-        y3 = (j + 1) * level_map.tile_size
+    @staticmethod
+    def finished(level_map, current_tile):
+        if current_tile[0] < 0 or current_tile[0] > level_map.w:
+            return True
+        elif current_tile[1] < 0 or current_tile[1] > level_map.h:
+            return True
+        if level_map.map_arr[current_tile]:
+            return True
 
     def intersect(self, level_map):
         """
-        Use bresenham algorithm to find collision of ray with a wall
+        Use DDA to find collision of ray with an object
         Args:
            level_map(LevelMap): Map for current level
 
         Returns:
-           float: Distance from the ray starting point to nearest wall
+           float: Distance from the ray starting point to nearest collider
         """
-        p1 = self.pr
-        # point x2 is just any point far enough to make the line have the
-        # intersection
-        s = max(level_map.hrzn_size, level_map.vert_size)
-        p2 = p1 + s * self.nr
-        dx = p2[0] - p1[0]
-        dy = p2[1] - p1[1]
-        slope = abs(dy / dx)
-        # Decision error value
-        d = abs(dy) - abs(dx) / 2
-        i0 = int(p1[0] // level_map.tile_size)
-        j0 = level_map.h - 1 - int(p1[1] // level_map.tile_size)
-        i1, j1 = i0, j0
-        x_step = 1 if dx > 0 else -1
-        y_step = 1 if dy > 0 else -1
-        error_type_1 = abs(dy)
-        error_type_2 = abs(dy) - abs(dx)
-        if slope < 1:
-            iterations = abs(int(dx))
-            for i in range(iterations):
-                i1 += x_step
-                if d < 0:
-                    # Only increment x
-                    d += error_type_1
-                else:
-                    # Increment x and y
-                    d += error_type_2
-                    j1 += y_step
+        # distance in an axis when the other axis distance is 1
+        normalized_pos = self.pr / level_map.tile_size
+        current_tile = (np.floor(normalized_pos)).astype(int)
+        dx = sqrt(1 + (self.nr[1] / self.nr[0]) ** 2)
+        dy = sqrt(1 + (self.nr[0] / self.nr[1]) ** 2)
+        step_x = 1 if self.nr[0] > 0 else -1
+        step_y = 1 if self.nr[1] > 0 else -1
+        # length to the next intersection after adding 1 to x
+        if self.nr[0] > 0:
+            next_x = ((current_tile[0] + 1) - normalized_pos[0]) * dy
         else:
-            iterations = abs(int(dy))
-            for j in range(iterations):
-                j1 += y_step
-                if d < 0:
-                    # Only increment y
-                    d += error_type_1
-                else:
-                    d += error_type_2
-                    i1 += x_step
-        # now we have a pixel in line (i1, j1)
-        distance = self.get_distance(i1, j1)
-        if distance:
-            return distance
+            next_x = (normalized_pos[0] - current_tile[0]) * dy
+        if self.nr[1] > 0:
+            next_y = ((current_tile[1] + 1) - normalized_pos[1]) * dx
+        else:
+            next_y = (normalized_pos[1] - current_tile[1]) * dx
+        distance = 0
+        while not self.finished(level_map, current_tile):
+            if next_x < next_y:
+                current_tile[0] += step_x
+                distance = next_x
+                next_x += dy
+            else:
+                current_tile[1] += step_y
+                distance = next_y
+                next_y += dx
+        return distance
 
 
 def raycast(player, level_map):
     """
-    Use bresenham algorithm to find collision of ray with a wall
+    Create a ray from the player view and intersect with the nearest collider
     Args:
-        player(Player):
+        player(Player): Player object
         level_map(LevelMap): Map for current level
 
     Returns:
         float: Distance from the ray starting point to nearest wall
     """
-    pass
+    direction = utils.normalize(
+        np.array([math.cos(player.rot), math.sin(player.rot)])
+    )
+    ray = Ray(player.pos, direction)
+    distance = ray.intersect(level_map)
+    return distance

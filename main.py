@@ -107,7 +107,7 @@ def on_draw():
     # Transform image array to bytes data
     bytes_data = current_im_arr.tobytes()
     image_data.set_data(IMG_FORMAT, pitch, bytes_data)
-    image_data.blit(480, 0)
+    image_data.blit(HEIGHT, 0)
     batch.draw()
 
 

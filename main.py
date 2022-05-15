@@ -125,7 +125,9 @@ def init_map_top():
                 tiles.append(tile)
 
     for i in range(WIDTH):
-        debug_lines.append(Line(0, 0, 0, 0, batch=batch))
+        line = Line(0, 0, 0, 0, color=(0, 255, 0), batch=batch)
+        line.opacity = 120
+        debug_lines.append(line)
 
 
 @window.event

@@ -79,7 +79,7 @@ class Player:
 
 class LevelMap:
     def __init__(self, map_arr, tile_size):
-        self.map_arr = map_arr
+        self.map_arr = np.flipud(map_arr)
         self.h, self.w = map_arr.shape
         self.tile_size = tile_size
         self.hrzn_size = self.w * self.tile_size

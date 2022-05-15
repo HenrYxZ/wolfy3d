@@ -1,12 +1,18 @@
+import math
+
 import numpy as np
 import pyglet
 from pyglet.gl import *
+from pyglet.shapes import Line
 from pyglet.window import key
 
 # Local modules
-from constants import COLOR_CHANNELS, TILE_SIZE, WALL_CODE
+from constants import COLOR_CHANNELS, TILE_SIZE_MTS, WALL_CODE
 from game import *
+from raycast import raycast
 from render import render
+import utils
+
 
 MAP = np.array([
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
@@ -27,7 +33,7 @@ FOV = 60
 FPS = 17.5
 # Screen settings
 HEIGHT = 480
-WIDTH = 640 + HEIGHT    # Adding a square for top view of size equal to height
+WIDTH = 640
 IMG_FORMAT = 'RGB'
 pitch = -WIDTH * COLOR_CHANNELS
 # Image buffer
@@ -36,12 +42,12 @@ data = current_im_arr.tobytes()
 image_data = pyglet.image.ImageData(WIDTH, HEIGHT, IMG_FORMAT, data, pitch)
 
 
-window = pyglet.window.Window(WIDTH, HEIGHT)
+window = pyglet.window.Window(WIDTH + HEIGHT, HEIGHT)   # Add space for debug
 keys = key.KeyStateHandler()
 window.push_handlers(keys)
 batch = pyglet.graphics.Batch()
 
-level_map = LevelMap(MAP, TILE_SIZE)
+level_map = LevelMap(MAP, TILE_SIZE_MTS)
 level = Level("Lvl 1", level_map)
 player_pos = Point(2.2, 3.3)
 # rotation = math.pi / 3
@@ -61,21 +67,41 @@ player_sprite = pyglet.sprite.Sprite(
 player_sprite.rotation = np.rad2deg(-player.rot)
 tiles = []
 current_scene = Scene(player, level)
+debug_lines = []
+
+
+def update_debug_rays():
+    distances = raycast(player, current_scene.level.level_map, FOV, WIDTH)
+    fov_rads = np.deg2rad(FOV)
+    for i in range(WIDTH):
+        current_angle = utils.lerp(
+            i / WIDTH, -fov_rads / 2, fov_rads / 2
+        )
+        angle = current_angle + player.rot
+        direction = utils.normalize(
+            np.array([math.cos(angle), math.sin(angle)])
+        )
+        p1 = player.pos.to_ndarray() * top_ratio
+        p2 = p1 + distances[i] * direction * top_ratio
+        debug_line = debug_lines[i]
+        debug_line.x, debug_line.y = p1
+        debug_line.x2, debug_line.y2 = p2
 
 
 def update(dt):
     if keys[key.Q]:
         pyglet.app.exit()
-    elif keys[key.W]:
+    if keys[key.W]:
         player.move_forward(dt, level_map)
-    elif keys[key.S]:
+    if keys[key.S]:
         player.move_backward(dt, level_map)
-    elif keys[key.A]:
+    if keys[key.A]:
         player.turn_left(dt)
-    elif keys[key.D]:
+    if keys[key.D]:
         player.turn_right(dt)
     player_sprite.position = np.array([player.pos.x, player.pos.y]) * top_ratio
     player_sprite.rotation = np.rad2deg(-player.rot)
+    update_debug_rays()
 
 
 def main():
@@ -98,6 +124,9 @@ def init_map_top():
                 )
                 tiles.append(tile)
 
+    for i in range(WIDTH):
+        debug_lines.append(Line(0, 0, 0, 0, batch=batch))
+
 
 @window.event
 def on_draw():
@@ -105,6 +134,7 @@ def on_draw():
     window.clear()
     render(current_scene, current_im_arr, FOV)
     # Transform image array to bytes data
+    current_im_arr = np.flipud(current_im_arr)
     bytes_data = current_im_arr.tobytes()
     image_data.set_data(IMG_FORMAT, pitch, bytes_data)
     image_data.blit(HEIGHT, 0)

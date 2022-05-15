@@ -15,7 +15,7 @@ class Ray:
             return True
         elif current_tile[1] < 0 or current_tile[1] > level_map.h:
             return True
-        if level_map.map_arr[current_tile]:
+        if level_map.map_arr[current_tile[1], current_tile[0]]:
             return True
 
     def intersect(self, level_map):
@@ -30,8 +30,8 @@ class Ray:
         # distance in an axis when the other axis distance is 1
         normalized_pos = self.pr / level_map.tile_size
         current_tile = (np.floor(normalized_pos)).astype(int)
-        dx = sqrt(1 + (self.nr[1] / self.nr[0]) ** 2)
-        dy = sqrt(1 + (self.nr[0] / self.nr[1]) ** 2)
+        dx = math.sqrt(1 + (self.nr[1] / self.nr[0]) ** 2)
+        dy = math.sqrt(1 + (self.nr[0] / self.nr[1]) ** 2)
         step_x = 1 if self.nr[0] > 0 else -1
         step_y = 1 if self.nr[1] > 0 else -1
         # length to the next intersection after adding 1 to x
@@ -56,19 +56,29 @@ class Ray:
         return distance
 
 
-def raycast(player, level_map):
+def raycast(player, level_map, fov, resolution):
     """
     Create a ray from the player view and intersect with the nearest collider
     Args:
-        player(Player): Player object
-        level_map(LevelMap): Map for current level
+        player (Player): Player object
+        level_map (LevelMap): Map for current level
+        fov (float): Field of View of the player in degrees
+        resolution (int): number of rays to cast
 
     Returns:
         float: Distance from the ray starting point to nearest wall
     """
-    direction = utils.normalize(
-        np.array([math.cos(player.rot), math.sin(player.rot)])
-    )
-    ray = Ray(player.pos, direction)
-    distance = ray.intersect(level_map)
-    return distance
+    distances = []
+    fov_rads = np.deg2rad(fov)
+    for i in range(resolution):
+        current_angle = utils.lerp(
+            i / resolution, -fov_rads / 2, fov_rads / 2
+        )
+        angle = current_angle + player.rot
+        direction = utils.normalize(
+            np.array([math.cos(angle), math.sin(angle)])
+        )
+        ray = Ray(player.pos.to_ndarray(), direction)
+        distance = ray.intersect(level_map)
+        distances.append(distance)
+    return distances

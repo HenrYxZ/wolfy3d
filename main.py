@@ -36,6 +36,8 @@ HEIGHT = 480
 WIDTH = 640
 IMG_FORMAT = 'RGB'
 pitch = -WIDTH * COLOR_CHANNELS
+# Other settings
+PIXEL_SIZE = 2
 # Image buffer
 current_im_arr = np.zeros([HEIGHT, WIDTH, COLOR_CHANNELS], dtype=np.uint8)
 data = current_im_arr.tobytes()
@@ -71,18 +73,18 @@ debug_lines = []
 
 
 def update_debug_rays():
-    distances = raycast(player, current_scene.level.level_map, FOV, WIDTH)
     fov_rads = np.deg2rad(FOV)
     for i in range(WIDTH):
         current_angle = utils.lerp(
             i / WIDTH, -fov_rads / 2, fov_rads / 2
         )
+        d = raycast(player, current_angle, current_scene.level.level_map)
         angle = current_angle + player.rot
         direction = utils.normalize(
             np.array([math.cos(angle), math.sin(angle)])
         )
         p1 = player.pos.to_ndarray() * top_ratio
-        p2 = p1 + distances[i] * direction * top_ratio
+        p2 = p1 + d * direction * top_ratio
         debug_line = debug_lines[i]
         debug_line.x, debug_line.y = p1
         debug_line.x2, debug_line.y2 = p2
@@ -134,9 +136,9 @@ def init_map_top():
 def on_draw():
     global current_im_arr
     window.clear()
-    render(current_scene, current_im_arr, FOV)
+    render(current_scene, current_im_arr, FOV, PIXEL_SIZE)
     # Transform image array to bytes data
-    current_im_arr = np.flipud(current_im_arr)
+    # current_im_arr = np.flipud(current_im_arr)
     bytes_data = current_im_arr.tobytes()
     image_data.set_data(IMG_FORMAT, pitch, bytes_data)
     image_data.blit(HEIGHT, 0)

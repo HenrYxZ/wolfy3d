@@ -56,29 +56,21 @@ class Ray:
         return distance
 
 
-def raycast(player, level_map, fov, resolution):
+def raycast(player, current_angle, level_map):
     """
     Create a ray from the player view and intersect with the nearest collider
     Args:
         player (Player): Player object
+        current_angle (float): Current angle in radians
         level_map (LevelMap): Map for current level
-        fov (float): Field of View of the player in degrees
-        resolution (int): number of rays to cast
 
     Returns:
-        float: Distance from the ray starting point to nearest wall
+        float: Distance from the ray starting point to nearest hit
     """
-    distances = []
-    fov_rads = np.deg2rad(fov)
-    for i in range(resolution):
-        current_angle = utils.lerp(
-            i / resolution, -fov_rads / 2, fov_rads / 2
-        )
-        angle = current_angle + player.rot
-        direction = utils.normalize(
-            np.array([math.cos(angle), math.sin(angle)])
-        )
-        ray = Ray(player.pos.to_ndarray(), direction)
-        distance = ray.intersect(level_map)
-        distances.append(distance)
-    return distances
+    angle = current_angle + player.rot
+    direction = utils.normalize(
+        np.array([math.cos(angle), math.sin(angle)])
+    )
+    ray = Ray(player.pos.to_ndarray(), direction)
+    distance = ray.intersect(level_map)
+    return distance

@@ -52,10 +52,8 @@ batch = pyglet.graphics.Batch()
 level_map = LevelMap(MAP, TILE_SIZE_MTS)
 level = Level("Lvl 1", level_map)
 player_pos = Point(2.2, 3.3)
-# rotation = math.pi / 3
 rotation = 0
 player = Player(player_pos, rotation)
-tri_side = 20
 player_img = pyglet.image.load("player.png")
 player_img.anchor_x = player_img.width // 2
 player_img.anchor_y = player_img.height // 2
@@ -66,7 +64,8 @@ player_sprite = pyglet.sprite.Sprite(
     player_pos.y * top_ratio,
     batch=batch
 )
-player_sprite.rotation = np.rad2deg(-player.rot)
+player_sprite.rotation = np.rad2deg(player.rot)
+player_sprite.scale = (player_img.width / top_ratio) * (2 * player.radius)
 tiles = []
 current_scene = Scene(player, level)
 debug_lines = []
@@ -101,7 +100,8 @@ def update(dt):
         player.turn_left(dt)
     if keys[key.D]:
         player.turn_right(dt)
-    player_sprite.position = np.array([player.pos.x, player.pos.y]) * top_ratio
+    player_sprite.position = player.pos.to_ndarray() * top_ratio
+    # use negative rotation because pyglet is counter-clockwise
     player_sprite.rotation = np.rad2deg(-player.rot)
     update_debug_rays()
 
@@ -136,7 +136,7 @@ def init_map_top():
 def on_draw():
     global current_im_arr
     window.clear()
-    render(current_scene, current_im_arr, FOV, PIXEL_SIZE)
+    # render(current_scene, current_im_arr, FOV, PIXEL_SIZE)
     # Transform image array to bytes data
     # current_im_arr = np.flipud(current_im_arr)
     bytes_data = current_im_arr.tobytes()

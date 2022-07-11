@@ -16,7 +16,7 @@ class Player:
     # speed in mt/s
     DEFAULT_SPEED = 1.42
     # turn speed takes 2 seconds to turn 360°
-    DEFAULT_TURN_SPEED = 2 * math.pi / 2
+    DEFAULT_TURN_SPEED = (2 * math.pi) / 2
     DEFAULT_RADIUS = 1
 
     def __init__(
@@ -28,8 +28,6 @@ class Player:
         self.speed = speed
         self.turn_speed = turn_speed
         self.radius = radius
-        # TODO: ADD LEVEL MAP
-        # self.level_map =
 
     def is_inside(self, level_map):
         h, w = level_map.map_arr.shape
@@ -52,18 +50,21 @@ class Player:
         elif self.pos.y > vertical_limit:
             self.pos.y = vertical_limit
 
-    def move_forward(self, dt, level_map):
+    def get_dx_and_dy(self, dt):
         dx = math.cos(self.rot) * self.speed * dt
         dy = math.sin(self.rot) * self.speed * dt
+        return dx, dy
+
+    def move_forward(self, dt, level_map):
+        dx, dy = self.get_dx_and_dy(dt)
         self.pos.x += dx
         self.pos.y += dy
         self.set_pos_to_bounds(level_map)
 
     def move_backward(self, dt, level_map):
-        dx = -math.cos(self.rot) * self.speed * dt
-        dy = -math.sin(self.rot) * self.speed * dt
-        self.pos.x += dx
-        self.pos.y += dy
+        dx, dy = self.get_dx_and_dy(dt)
+        self.pos.x -= dx
+        self.pos.y -= dy
         self.set_pos_to_bounds(level_map)
 
     def turn_left(self, dt):
@@ -80,7 +81,6 @@ class Player:
 class LevelMap:
     def __init__(self, map_arr, tile_size):
         self.map_arr = np.flipud(map_arr)
-        self.map_arr = map_arr
         self.h, self.w = map_arr.shape
         self.tile_size = tile_size
         self.hrzn_size = self.w * self.tile_size

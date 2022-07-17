@@ -2,6 +2,9 @@ import math
 import numpy as np
 
 
+import utils
+
+
 class Point:
     def __init__(self, x, y):
         self.x = x
@@ -54,6 +57,16 @@ class Player:
         dx = math.cos(self.rot) * self.speed * dt
         dy = math.sin(self.rot) * self.speed * dt
         return dx, dy
+
+    def get_direction(self):
+        direction = utils.normalize(
+            np.array([math.cos(self.rot), math.sin(self.rot)])
+        )
+        return direction
+
+    def get_position(self):
+        position = self.pos.to_ndarray()
+        return position
 
     def move_forward(self, dt, level_map):
         dx, dy = self.get_dx_and_dy(dt)

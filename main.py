@@ -22,7 +22,7 @@ MAP = np.array([
     [1, 0, 0, 0, 1, 1, 1, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
-    [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
+    [1, 0, 0, 0, 0, 0, 0, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1],
 ], dtype=np.uint8)
@@ -71,6 +71,18 @@ current_scene = Scene(player, level)
 debug_lines = []
 
 
+def shoot_debug_ray():
+    d = raycast(player, 0, current_scene.level.level_map)
+    direction = player.get_direction()
+    p1 = player.get_position() * top_ratio
+    p2 = p1 + d * direction * top_ratio
+    debug_line = debug_lines[0]
+    debug_line.x = int(p1[0])
+    debug_line.y = int(p1[1])
+    debug_line.x2 = int(p2[0])
+    debug_line.y2 = int(p2[1])
+
+
 def update_debug_rays():
     fov_rads = np.deg2rad(FOV)
     for i in range(WIDTH):
@@ -108,11 +120,13 @@ def update(dt):
 
 def main():
     init_map_top()
+    shoot_debug_ray()
     pyglet.clock.schedule_interval(update, 1 / FPS)
     pyglet.app.run()
 
 
 def init_map_top():
+    # Initialize the top view
     current_map = current_scene.level.level_map.map_arr
     n, m = current_map.shape
     for j in range(n):
@@ -121,11 +135,13 @@ def init_map_top():
                 rec_size = HEIGHT / n
                 x = i * rec_size
                 y = j * rec_size
+                # substract 1 pixel from rec_size so there's margin between
+                # rectangles
                 tile = pyglet.shapes.Rectangle(
-                    x, y, rec_size, rec_size, batch=batch
+                    x, y, rec_size - 1, rec_size - 1, batch=batch
                 )
                 tiles.append(tile)
-
+    # create debugging green lines for top view
     for i in range(WIDTH):
         line = Line(0, 0, 0, 0, color=(0, 255, 0), batch=batch)
         line.opacity = 120
@@ -136,9 +152,9 @@ def init_map_top():
 def on_draw():
     global current_im_arr
     window.clear()
-    # render(current_scene, current_im_arr, FOV, PIXEL_SIZE)
+    render(current_scene, current_im_arr, FOV, PIXEL_SIZE)
     # Transform image array to bytes data
-    # current_im_arr = np.flipud(current_im_arr)
+    current_im_arr = np.flipud(current_im_arr)
     bytes_data = current_im_arr.tobytes()
     image_data.set_data(IMG_FORMAT, pitch, bytes_data)
     image_data.blit(HEIGHT, 0)
